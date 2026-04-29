@@ -1,0 +1,70 @@
+# BudgetMitra Chatbot Technical Specifications
+
+## Section A: Chatbot Overview
+Q1. Type of Chatbot Developed: [x] Generative (LLM-based)
+Q2. Platform Used for Deployment: [x] Web Application
+Q3. Deployment Link / Access Details: Currently running on Localhost (Frontend: http://localhost:5173 | Backend: http://localhost:5000)
+
+---
+
+## Section B: Model & API Details
+Q4. Type of API Used: [x] Custom REST API (using Groq Cloud SDK)
+Q5. Model Name Used: Llama 3.3 70B Versatile
+Q6. Model Version: llama-3.3-70b-versatile
+
+---
+
+## Section C: Context & Data Handling
+Q7. Contextual Memory Usage: [x] Session-based memory (Last 10 conversation turns)
+Q8. Flow of Data in the Chatbot:
+1. UI (React): User types a message or clicks a dynamic prompt.
+2. Frontend: Axios/Fetch sends the message + Budget Context (Income/Expenses/Loans) to the backend.
+3. Backend (Flask/FastAPI): Receives the payload, formats the financial data into a system prompt, and appends chat history.
+4. AI Model (Groq): Receives the rich prompt and generates a streaming response using LPU™ technology.
+5. Response: The backend streams the text back to the UI.
+6. UI: ReactMarkdown renders the text into professional headers and tables for the user.
+
+---
+
+## Section D: Model Configuration & Behavior
+Q9. Model Parameters Used:
+- Temperature: 0.3 (Stable/Factual) | 0.7 (Conversational)
+- Top-p / Probability: 1.0 (Standard for Groq)
+- Input Token Limit: 128,000 (Context Window)
+- Output Token Limit: 800 (Per response)
+
+Q10. Thinking Level & Role Assignment:
+- Thinking Level: [x] Intermediate (Context-aware reasoning)
+- Role Assigned to Model: [x] Domain Expert (Indian Personal Finance Advisor)
+
+---
+
+## Section E: Technology Stack
+Q11. Technology Stack Used:
+- Frontend: React.js (Vite), Lucide-React (Icons), ReactMarkdown (Rendering), Axios
+- Backend: Flask / FastAPI (Python), Groq SDK, python-dotenv
+- Database / Vector Store: Supabase (PostgreSQL) for user data and financial profiles.
+- Cloud / Hosting: Local development environment (Vite + Uvicorn/Flask).
+
+---
+
+## Section F: Implementation Evidence (Code Snippet)
+Q12. API Call Snippet:
+
+```python
+# Backend API Call to Groq (app.py)
+completion = client.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[
+        {"role": "system", "content": system_instruction}, # Personalized Finance Context
+        {"role": "user", "content": user_message}
+    ],
+    temperature=0.3,
+    stream=True
+)
+
+for chunk in completion:
+    content = chunk.choices[0].delta.content
+    if content:
+        yield content # Streams back to React UI
+```
