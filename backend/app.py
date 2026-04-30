@@ -17,7 +17,7 @@ app.secret_key = "budgetmitra_secret"
 # Configure Groq
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
-MODEL_NAME = "llama-3.3-70b-versatile" # Ultra-low latency, high performance model
+MODEL_NAME = "llama-3.1-8b-instant"  # Groq's fastest model - avg ~200ms response
 
 def format_financial_context(budget_context):
     """Converts budgetState into a clean text summary for the AI."""
