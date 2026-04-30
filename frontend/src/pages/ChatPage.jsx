@@ -62,17 +62,26 @@ function ChatPage({ user, onLogout, budgetState, onUpdateBudget }) {
 
       if (!response.ok) throw new Error('Network error');
 
-      const data = await response.json();
-      const reply = data.reply || "Saathi had trouble responding. Please try again.";
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      
+      let fullText = "";
 
-      setMessages(prev => {
-        const newMsgs = [...prev];
-        newMsgs[newMsgs.length - 1].assistant = reply;
-        return newMsgs;
-      });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+        
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          newMsgs[newMsgs.length - 1].assistant = fullText;
+          return newMsgs;
+        });
+      }
     } catch (error) {
-      console.error('Chat Error:', error);
+      console.error('Streaming Error:', error);
       setMessages(prev => {
         const newMsgs = [...prev];
         newMsgs[newMsgs.length - 1].assistant = "Oops! Saathi's brain is a bit slow today. Please refresh.";
@@ -80,7 +89,7 @@ function ChatPage({ user, onLogout, budgetState, onUpdateBudget }) {
       });
     } finally {
       setIsTyping(false);
-      fetchSuggestions();
+      fetchSuggestions(); // Get new suggestions based on latest context
     }
   };
 
