@@ -66,8 +66,10 @@ def format_financial_context(budget_context):
         loan_summary = "- ACTIVE LIABILITIES: None"
 
     # Recent transactions (last 10)
-    recent = "\n".join([f"- {t.get('date')}: {t.get('merchant')} (₹{t.get('amount')})" for t in txs[:10]])
-   
+    recent = ""
+    if txs:
+        recent = "\n".join([f"- {t.get('date', 'N/A')}: {t.get('merchant', 'Unknown')} (₹{t.get('amount', 0)})" for t in txs[:10]])
+    
     context = (
         f"USER FINANCIAL STATUS (AS OF {current_month}):\n"
         f"- Monthly Income: ₹{income}\n"
@@ -162,7 +164,12 @@ def analyze():
     data = request.json
     spending = data.get('spending_data', 'No data')
     lang = data.get('language', 'English')
-   
+    
+    prompt = (
+        f"Analyze the following spending data and provide 3 actionable financial tips in {lang}.\n\n"
+        f"DATA:\n{spending}"
+    )
+    
     try:
         completion = client.chat.completions.create(
             model=MODEL_NAME,
@@ -171,7 +178,8 @@ def analyze():
             max_tokens=400
         )
         return jsonify({"insights": completion.choices[0].message.content if completion else "Stay disciplined with your spending!"})
-    except:
+    except Exception as e:
+        logger.error(f"Analyze Error: {str(e)}")
         return jsonify({"insights": "Keep tracking your expenses to see patterns."})
 
 @app.route('/health', methods=['GET'])
