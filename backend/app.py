@@ -16,8 +16,13 @@ app.secret_key = "budgetmitra_secret"
 
 # Configure Groq
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-client = Groq(api_key=GROQ_API_KEY)
-MODEL_NAME = "llama-3.3-70b-versatile" # Ultra-low latency, high performance model
+try:
+    client = Groq(api_key=GROQ_API_KEY, timeout=20.0) if GROQ_API_KEY else None
+except Exception as e:
+    logger.error(f"Failed to initialize Groq: {e}")
+    client = None
+
+MODEL_NAME = "llama-3.3-70b-versatile" 
 
 def format_financial_context(budget_context):
     """Converts budgetState into a clean text summary for the AI."""
