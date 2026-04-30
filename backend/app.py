@@ -92,7 +92,7 @@ def chat():
    
     try:
         data = request.json
-        logger.info(f"STREAMING REQUEST RECEIVED")
+        logger.info(f"REQUEST RECEIVED")
        
         if not client:
             return jsonify({"reply": "Saathi is currently offline."}), 503
@@ -104,56 +104,45 @@ def chat():
 
         fin_context = format_financial_context(budget_context)
        
-        def generate():
-            try:
-                system_instruction = (
-                    f"You are Saathi, a wise, friendly, and expert Indian Personal Finance Assistant. "
-                    f"Your goal is to help the user manage their budget, save money, and make smart financial decisions.\n\n"
-                    f"STRICT DOMAIN LOCK (GUARDRAIL):\n"
-                    f"1. **FINANCE ONLY**: You are strictly a Personal Finance Advisor. You must NOT answer questions about movies, sports, history, coding, or any non-financial topics.\n"
-                    f"2. **OFF-TOPIC REFUSAL**: If a user asks an off-topic question, politely say: 'I am Saathi, your Personal Finance Saathi. I can only assist you with budgeting, saving, and financial planning. Please ask me something related to your money! 💰'\n"
-                    f"3. **SAMPLE PROMPTS**: After an off-topic refusal, always list 3 sample prompts the user CAN ask, like:\n"
-                    f"   - 'How can I reduce my food expenses? 🍔'\n"
-                    f"   - 'Can you analyze my spending for this month? 📊'\n"
-                    f"   - 'What is the best way to save for a new bike? 🏍️'\n\n"
-                    f"STRICT MARKDOWN & STYLE RULES:\n"
-                    f"1. **NO SPACES IN BOLD**: Use **₹4,750**, never ** ₹ 4,750 **.\n"
-                    f"2. **HEADERS & SEPARATION**: Use `###` and `---` horizontal rules.\n"
-                    f"3. **TABLES FOR DATA**: Always use Markdown Tables for categorized expenses.\n"
-                    f"4. **FINANCIAL REPORT STYLE**: Professional, structured, and clean.\n"
-                    f"5. **CRITICAL LIABILITIES**: Always incorporate EMI impact from active loans.\n\n"
-                    f"Respond ONLY in {language}.\n\n"
-                    f"USER CONTEXT:\n{fin_context}"
-                )
+        system_instruction = (
+            f"You are Saathi, a wise, friendly, and expert Indian Personal Finance Assistant. "
+            f"Your goal is to help the user manage their budget, save money, and make smart financial decisions.\n\n"
+            f"STRICT DOMAIN LOCK (GUARDRAIL):\n"
+            f"1. **FINANCE ONLY**: You are strictly a Personal Finance Advisor. You must NOT answer questions about movies, sports, history, coding, or any non-financial topics.\n"
+            f"2. **OFF-TOPIC REFUSAL**: If a user asks an off-topic question, politely say: 'I am Saathi, your Personal Finance Saathi. I can only assist you with budgeting, saving, and financial planning. Please ask me something related to your money! 💰'\n"
+            f"3. **SAMPLE PROMPTS**: After an off-topic refusal, always list 3 sample prompts the user CAN ask, like:\n"
+            f"   - 'How can I reduce my food expenses? 🍔'\n"
+            f"   - 'Can you analyze my spending for this month? 📊'\n"
+            f"   - 'What is the best way to save for a new bike? 🏍️'\n\n"
+            f"STRICT MARKDOWN & STYLE RULES:\n"
+            f"1. **NO SPACES IN BOLD**: Use **₹4,750**, never ** ₹ 4,750 **.\n"
+            f"2. **HEADERS & SEPARATION**: Use `###` and `---` horizontal rules.\n"
+            f"3. **TABLES FOR DATA**: Always use Markdown Tables for categorized expenses.\n"
+            f"4. **FINANCIAL REPORT STYLE**: Professional, structured, and clean.\n"
+            f"5. **CRITICAL LIABILITIES**: Always incorporate EMI impact from active loans.\n\n"
+            f"Respond ONLY in {language}.\n\n"
+            f"USER CONTEXT:\n{fin_context}"
+        )
 
-                messages = [
-                    {"role": "system", "content": system_instruction},
-                ]
-               
-                # Add history
-                for m in (history or [])[-10:]:
-                    if m.get('user'): messages.append({"role": "user", "content": m.get('user')})
-                    if m.get('assistant'): messages.append({"role": "assistant", "content": m.get('assistant')})
-               
-                messages.append({"role": "user", "content": message})
+        messages = [{"role": "system", "content": system_instruction}]
+       
+        # Add history
+        for m in (history or [])[-10:]:
+            if m.get('user'): messages.append({"role": "user", "content": m.get('user')})
+            if m.get('assistant'): messages.append({"role": "assistant", "content": m.get('assistant')})
+       
+        messages.append({"role": "user", "content": message})
 
-                completion = client.chat.completions.create(
-                    model=MODEL_NAME,
-                    messages=messages,
-                    temperature=0.7,
-                    max_tokens=800,
-                    stream=True,
-                )
-               
-                for chunk in completion:
-                    content = chunk.choices[0].delta.content
-                    if content:
-                        yield content
-            except Exception as e:
-                logger.error(f"Generation Error: {str(e)}")
-                yield " [Saathi is having a small technical hiccup. Please try again.]"
-
-        return Response(generate(), mimetype='text/plain')
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=800,
+            stream=False,  # Non-streaming for Vercel compatibility
+        )
+       
+        reply = completion.choices[0].message.content
+        return jsonify({"reply": reply})
 
     except Exception as e:
         logger.error(f"Endpoint Error: {str(e)}")
